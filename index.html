@@ -60,13 +60,11 @@ header .ib{border:1px solid var(--line)}
 #list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 14px 16px;display:flex;flex-direction:column}
 .empty{margin:auto;color:var(--muted);text-align:center;font-size:.85rem}
 .sep{align-self:center;margin:28px 0 8px;font-size:.68rem;letter-spacing:.02em;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px 12px}
-.msg{display:flex;flex-direction:column;max-width:80%;margin-top:18px}
-.msg.grp{margin-top:4px}
+.msg{display:flex;flex-direction:column;max-width:80%;margin-top:22px}
+.msg.grp{margin-top:9px}
 .msg.me{align-self:flex-end;align-items:flex-end}.msg.them{align-self:flex-start;align-items:flex-start}
 .bubble{padding:9px 13px 7px;border-radius:17px;line-height:1.45;font-size:.95rem;word-break:break-word;cursor:pointer;color:#14152b}
 .me.tail .bubble{border-bottom-right-radius:5px}.them.tail .bubble{border-bottom-left-radius:5px}
-.me.grp .bubble{border-top-right-radius:6px}.them.grp .bubble{border-top-left-radius:6px}
-.me:not(.tail) .bubble{border-bottom-right-radius:6px}.them:not(.tail) .bubble{border-bottom-left-radius:6px}
 .tegkirat .bubble{background:var(--teg)}.jashanpreet .bubble{background:var(--jash)}
 .txt{white-space:pre-wrap}
 .bubble.media{padding:4px}
@@ -78,6 +76,9 @@ header .ib{border:1px solid var(--line)}
 .quote b{display:block;font-size:.7rem}
 .quote span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .rx{display:flex;flex-wrap:wrap;gap:4px;margin-top:-5px;padding:0 6px;position:relative;z-index:1}
+.rx:not(:empty){margin-bottom:8px}
+.alt{width:100%;margin-top:8px;padding:11px;border-radius:12px;border:1px solid #2c4aa0;color:#cfe0ff;display:flex;align-items:center;justify-content:center;gap:8px;font-size:.88rem}
+.alt .ic{width:18px;height:18px}
 .chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:.78rem}
 .chip.mine{border-color:var(--text);background:var(--line)}
 .tools{display:none;flex-direction:column;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:5px 6px;margin-bottom:5px;box-shadow:0 8px 22px #0007}
@@ -122,6 +123,7 @@ textarea{flex:1;min-width:0;resize:none;max-height:110px;padding:10px 14px;borde
   <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8.7 14.2a4 4 0 0 0 6.6 0M9.3 9.6h.01M14.7 9.6h.01"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3 10.5 13.5M21 3l-6.5 18-4-7.5L3 9.5z"/></symbol>
   <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 3.5h6l-.8 5.2 3 3.3v1.8H6.8V12l3-3.3zM12 13.8V21"/></symbol>
+  <symbol id="i-face" viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 10v1.5M15 10v1.5M12 10v3h-1M9 15.5a4 4 0 0 0 6 0"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
   <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></symbol>
 </defs></svg>
@@ -135,6 +137,7 @@ textarea{flex:1;min-width:0;resize:none;max-height:110px;padding:10px 14px;borde
     <button type="button" id="eye" aria-label="Show password"><svg class="ic"><use href="#i-eye"/></svg></button>
   </div>
   <button class="go" id="enter" type="button">Unlock</button>
+  <button class="alt" id="face" type="button" hidden><svg class="ic"><use href="#i-face"/></svg>Unlock with Face ID</button>
   <div id="err" role="alert"></div>
 </div></div>
 <div id="veil" hidden></div>
@@ -167,6 +170,7 @@ textarea{flex:1;min-width:0;resize:none;max-height:110px;padding:10px 14px;borde
   <div class="seg" data-k="size"><button data-v="s">Small</button><button data-v="m">Medium</button><button data-v="l">Large</button></div>
   <label>Auto-lock when idle</label>
   <div class="seg" data-k="auto"><button data-v="0">Off</button><button data-v="30">30s</button><button data-v="120">2 min</button><button data-v="300">5 min</button></div>
+  <button class="row" id="faceBtn" type="button" hidden>Enable Face ID unlock</button>
   <button class="row" id="lockNow" type="button">Lock now</button>
   <button class="row" id="done" type="button">Done</button>
 </div></div>
@@ -237,7 +241,7 @@ function lock() {
   $("app").inert = true; $("lock").hidden = false; $("veil").hidden = true;
   $("pw").value = ""; $("pw").type = "password"; $("err").textContent = "";
   $("lp").textContent = "Locked. Enter your password to continue.";
-  closeSheet(); closeMenus(); setOnline(false);
+  closeSheet(); closeMenus(); setOnline(false); refreshFace();
 }
 function fail(msg) {
   $("err").textContent = msg;
@@ -251,14 +255,64 @@ function tryUnlock() {
     if (++tries >= 5) { tries = 0; until = Date.now() + 30000; $("pw").value = ""; return fail("Too many attempts. Wait 30 seconds."); }
     $("pw").value = ""; return fail("Wrong password.");
   }
-  tries = 0;
+  tries = 0; grant(u);
+}
+function grant(u) {
   if (!me) start(u);
   locked = false;
   document.body.classList.remove("locked");
-  $("lock").hidden = true; $("app").inert = false; $("pw").value = "";
-  setOnline(true); resetIdle(); markSeen();
+  $("lock").hidden = true; $("app").inert = false; $("pw").value = ""; $("err").textContent = "";
+  setOnline(true); resetIdle(); markSeen(); refreshFace();
   const l = $("list"); l.scrollTop = l.scrollHeight;
 }
+
+/* ---------- Face ID (device biometrics via WebAuthn; needs https) ---------- */
+let faceOK = false;
+const b64u = b => btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+const getFid = u => { try { return localStorage.getItem("fid_" + u); } catch (e) { return null; } };
+const enrolled = () => Object.keys(USERS).filter(u => (!me || u === me) && getFid(u));
+function refreshFace() {
+  $("face").hidden = !(faceOK && enrolled().length);
+  $("faceBtn").hidden = !(faceOK && me);
+  $("faceBtn").textContent = me && getFid(me) ? "Turn off Face ID unlock" : "Enable Face ID unlock";
+}
+async function faceUnlock() {
+  const list = enrolled().map(u => [u, getFid(u)]);
+  if (!list.length) return;
+  busy = true;
+  try {
+    const a = await navigator.credentials.get({ publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      allowCredentials: list.map(([, id]) => ({ type: "public-key", id: unb64u(id) })),
+      userVerification: "required", timeout: 60000 } });
+    const got = b64u(a.rawId), hit = list.find(x => x[1] === got);
+    if (hit) grant(hit[0]); else fail("Face ID didn't match. Use your password.");
+  } catch (e) { fail("Face ID cancelled. Use your password."); }
+  finally { beat = Date.now(); setTimeout(() => busy = false, 800); }
+}
+async function toggleFace() {
+  if (getFid(me)) { try { localStorage.removeItem("fid_" + me); } catch (e) {} refreshFace(); return; }
+  busy = true;
+  try {
+    const c = await navigator.credentials.create({ publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      rp: { name: "Private chat" },
+      user: { id: crypto.getRandomValues(new Uint8Array(16)), name: me, displayName: USERS[me].name },
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" },
+      timeout: 60000, attestation: "none" } });
+    localStorage.setItem("fid_" + me, b64u(c.rawId));
+    refreshFace();
+  } catch (e) {
+    $("faceBtn").textContent = "Couldn't turn on Face ID (needs https)";
+    setTimeout(refreshFace, 2500);
+  } finally { beat = Date.now(); setTimeout(() => busy = false, 800); }
+}
+$("face").onclick = faceUnlock;
+$("faceBtn").onclick = toggleFace;
+if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable)
+  PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(ok => { faceOK = ok; refreshFace(); }).catch(() => {});
 $("enter").onclick = tryUnlock;
 $("pw").onkeydown = e => { if (e.key === "Enter") tryUnlock(); };
 $("eye").onclick = () => { $("pw").type = $("pw").type === "password" ? "text" : "password"; };
@@ -410,7 +464,6 @@ function build(id) {
   ar.append(act(m.pinned ? "Unpin" : "Pin", () => togglePin(id)));
   if (m.text) ar.append(act("Copy", () => navigator.clipboard?.writeText(m.text)));
   if (mine && m.text) ar.append(act("Edit", () => setEdit(id)));
-  if (mine) ar.append(act("Delete", () => { if (ask("Delete this message for both of you?")) db.ref("messages/" + id).remove(); }, "bad"));
   tools.append(er, ar);
 
   const bubble = mk("bubble");
