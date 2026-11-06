@@ -57,17 +57,21 @@ header .ib{border:1px solid var(--line)}
 #pinbar span{display:block;font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* messages */
-#list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 12px 12px;display:flex;flex-direction:column}
+#list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 14px 16px;display:flex;flex-direction:column}
 .empty{margin:auto;color:var(--muted);text-align:center;font-size:.85rem}
-.sep{align-self:center;margin:20px 0 6px;font-size:.68rem;letter-spacing:.02em;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px 12px}
-.msg{display:flex;flex-direction:column;max-width:80%;margin-top:13px}
-.msg.grp{margin-top:2px}
+.sep{align-self:center;margin:28px 0 8px;font-size:.68rem;letter-spacing:.02em;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px 12px}
+.msg{display:flex;flex-direction:column;max-width:80%;margin-top:18px}
+.msg.grp{margin-top:4px}
 .msg.me{align-self:flex-end;align-items:flex-end}.msg.them{align-self:flex-start;align-items:flex-start}
-.bubble{padding:8px 11px 6px;border-radius:16px;line-height:1.4;font-size:.95rem;word-break:break-word;cursor:pointer;color:#14152b}
-.me .bubble{border-bottom-right-radius:5px}.them .bubble{border-bottom-left-radius:5px}
+.bubble{padding:9px 13px 7px;border-radius:17px;line-height:1.45;font-size:.95rem;word-break:break-word;cursor:pointer;color:#14152b}
+.me.tail .bubble{border-bottom-right-radius:5px}.them.tail .bubble{border-bottom-left-radius:5px}
+.me.grp .bubble{border-top-right-radius:6px}.them.grp .bubble{border-top-left-radius:6px}
+.me:not(.tail) .bubble{border-bottom-right-radius:6px}.them:not(.tail) .bubble{border-bottom-left-radius:6px}
 .tegkirat .bubble{background:var(--teg)}.jashanpreet .bubble{background:var(--jash)}
 .txt{white-space:pre-wrap}
-.bubble img{display:block;max-width:100%;max-height:280px;border-radius:11px;margin-bottom:4px}
+.bubble.media{padding:4px}
+.bubble img{display:block;width:260px;max-width:100%;height:auto;max-height:340px;object-fit:cover;border-radius:14px}
+.media .txt{padding:7px 9px 0}.media .meta{padding:3px 9px 3px}.media .quote{margin:4px 4px 6px}
 .meta{display:flex;justify-content:flex-end;align-items:center;gap:4px;font-size:.66rem;opacity:.62;margin-top:2px}
 .meta .ic{width:10px;height:10px;stroke-width:2}
 .quote{background:#14152b1f;border-left:3px solid #14152b99;border-radius:8px;padding:4px 8px;margin-bottom:5px;font-size:.8rem}
@@ -164,7 +168,6 @@ textarea{flex:1;min-width:0;resize:none;max-height:110px;padding:10px 14px;borde
   <label>Auto-lock when idle</label>
   <div class="seg" data-k="auto"><button data-v="0">Off</button><button data-v="30">30s</button><button data-v="120">2 min</button><button data-v="300">5 min</button></div>
   <button class="row" id="lockNow" type="button">Lock now</button>
-  <button class="row bad" id="clear" type="button">Clear whole chat</button>
   <button class="row" id="done" type="button">Done</button>
 </div></div>
 
@@ -199,15 +202,20 @@ let replyTo = null, editing = null, started = false, tries = 0, until = 0, pi = 
 const data = {};
 
 /* ---------- preferences (passwords are never stored) ---------- */
+const DEFAULT_THEME = { tegkirat: "midnight", jashanpreet: "rose" };
 let prefs = { theme: "classic", size: "m", auto: "120" };
-try { Object.assign(prefs, JSON.parse(localStorage.getItem("prefs") || "{}")); } catch (e) {}
+function loadPrefs(u) {
+  prefs = { theme: DEFAULT_THEME[u], size: "m", auto: "120" };
+  try { Object.assign(prefs, JSON.parse(localStorage.getItem("prefs_" + u) || "{}")); } catch (e) {}
+  applyPrefs();
+}
 function applyPrefs() {
   document.documentElement.dataset.theme = prefs.theme;
   document.documentElement.dataset.size = prefs.size;
   document.querySelector("meta[name=theme-color]").content = THEME_BG[prefs.theme] || "#14152b";
   document.querySelectorAll(".seg").forEach(s => s.querySelectorAll("button").forEach(b =>
     b.classList.toggle("on", String(prefs[s.dataset.k]) === b.dataset.v)));
-  try { localStorage.setItem("prefs", JSON.stringify(prefs)); } catch (e) {}
+  if (me) { try { localStorage.setItem("prefs_" + me, JSON.stringify(prefs)); } catch (e) {} }
   resetIdle();
 }
 document.querySelectorAll(".seg").forEach(s => s.onclick = e => {
@@ -256,10 +264,18 @@ $("pw").onkeydown = e => { if (e.key === "Enter") tryUnlock(); };
 $("eye").onclick = () => { $("pw").type = $("pw").type === "password" ? "text" : "password"; };
 
 // leaving the page / Home Screen / app switch => lock + blur
-document.addEventListener("visibilitychange", () => { if (document.hidden && !picking) lock(); });
+const standalone = navigator.standalone || matchMedia("(display-mode: standalone)").matches;
+let beat = Date.now(), busy = false;
+const away = () => { if (!picking && !busy) lock(); };
+function ask(msg) { busy = true; const r = confirm(msg); beat = Date.now(); setTimeout(() => busy = false, 600); return r; }
+document.addEventListener("visibilitychange", () => { if (document.hidden || Date.now() - beat > 3000) away(); });
+document.addEventListener("freeze", away);
 addEventListener("pagehide", () => lock());
-addEventListener("blur", () => { if (!locked && !picking) $("veil").hidden = false; });
-addEventListener("focus", () => { $("veil").hidden = true; });
+addEventListener("pageshow", e => { if (e.persisted) lock(); });
+addEventListener("blur", () => { if (standalone) away(); else if (!locked && !picking) $("veil").hidden = false; });
+addEventListener("focus", () => { $("veil").hidden = true; if (Date.now() - beat > 3000) away(); });
+// timers freeze while an installed app is suspended, so a time gap means the user left
+setInterval(() => { const n = Date.now(); if (n - beat > 3000 || document.hidden) away(); beat = n; }, 1000);
 
 function resetIdle() {
   clearTimeout(idleT);
@@ -292,6 +308,7 @@ function typing() {
 /* ---------- start (once, after the first correct password) ---------- */
 function start(u) {
   me = u; other = u === "tegkirat" ? "jashanpreet" : "tegkirat";
+  loadPrefs(u);
   $("app").hidden = false;
   $("oAv").textContent = USERS[other].name[0];
   $("oAv").style.background = other === "tegkirat" ? "var(--teg)" : "var(--jash)";
@@ -360,6 +377,8 @@ function layout() {
     else if (prev && prev.from === m.from && ts - prev.ts < 5 * 60000) el.classList.add("grp");
     prev = { from: m.from, ts };
   });
+  const els = [...list.querySelectorAll(".msg")];
+  els.forEach((el, i) => el.classList.toggle("tail", !(els[i + 1] && els[i + 1].classList.contains("grp"))));
   updatePins();
   if (stick) { list.scrollTop = list.scrollHeight; stick = false; }
 }
@@ -391,7 +410,7 @@ function build(id) {
   ar.append(act(m.pinned ? "Unpin" : "Pin", () => togglePin(id)));
   if (m.text) ar.append(act("Copy", () => navigator.clipboard?.writeText(m.text)));
   if (mine && m.text) ar.append(act("Edit", () => setEdit(id)));
-  if (mine) ar.append(act("Delete", () => { if (confirm("Delete this message for both of you?")) db.ref("messages/" + id).remove(); }, "bad"));
+  if (mine) ar.append(act("Delete", () => { if (ask("Delete this message for both of you?")) db.ref("messages/" + id).remove(); }, "bad"));
   tools.append(er, ar);
 
   const bubble = mk("bubble");
@@ -401,7 +420,7 @@ function build(id) {
     qt.append(b, sp); qt.onclick = e => { e.stopPropagation(); jump(m.reply.id); };
     bubble.append(qt);
   }
-  if (m.img) { const i = document.createElement("img"); i.src = m.img; i.alt = "Photo"; bubble.append(i); }
+  if (m.img) { const i = document.createElement("img"); i.src = m.img; i.alt = "Photo"; bubble.classList.add("media"); bubble.append(i); }
   if (m.text) bubble.append(mk("txt", m.text));
   const meta = mk("meta");
   if (m.pinned) meta.insertAdjacentHTML("beforeend", icon("pin"));
@@ -495,7 +514,6 @@ $("done").onclick = closeSheet;
 $("sheet").onclick = e => { if (e.target === $("sheet")) closeSheet(); };
 $("lockBtn").onclick = lock;
 $("lockNow").onclick = lock;
-$("clear").onclick = () => { if (confirm("Delete every message for both of you?")) { db.ref("messages").remove(); closeSheet(); } };
 
 applyPrefs();
 </script>
