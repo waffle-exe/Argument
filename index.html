@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="classic" data-size="m">
+<html lang="en" data-theme="black" data-size="m">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
@@ -7,13 +7,11 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Chat">
-<meta name="theme-color" content="#14152b">
+<meta name="theme-color" content="#000000">
 <title>Private chat</title>
 <style>
-:root{--bg:#14152b;--panel:#1d1f3d;--line:#2e3160;--text:#eceefc;--muted:#8e93c4;--teg:#2fd4b8;--jash:#ffb547;--bad:#ff7a8a;--h:100dvh;
+:root{--bg:#000000;--panel:#101014;--line:#26262d;--text:#f2f2f5;--muted:#8b8b96;--teg:#2fd4b8;--jash:#ffb547;--bad:#ff7a8a;--h:100dvh;
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Segoe UI",Roboto,system-ui,sans-serif}
-[data-theme=ocean]{--bg:#0b1a3f;--panel:#12265a;--line:#24407f;--muted:#8fa6d8}
-[data-theme=midnight]{--bg:#0d0e18;--panel:#171929;--line:#2a2d49;--muted:#8a8fb8}
 [data-theme=rose]{--bg:#2a1024;--panel:#3a1832;--line:#5a2b4f;--muted:#d49abd}
 html{font-size:14px}[data-size=s]{font-size:13px}[data-size=l]{font-size:16px}
 *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
@@ -165,7 +163,7 @@ textarea{flex:1;min-width:0;resize:none;max-height:110px;padding:10px 14px;borde
 <div id="sheet" hidden><div class="panel">
   <h2>Options</h2>
   <label>Theme</label>
-  <div class="seg" data-k="theme"><button data-v="classic">Classic</button><button data-v="ocean">Ocean</button><button data-v="midnight">Midnight</button><button data-v="rose">Rose</button></div>
+  <div class="seg" data-k="theme"><button data-v="black">Black</button><button data-v="rose">Rose</button></div>
   <label>Text size</label>
   <div class="seg" data-k="size"><button data-v="s">Small</button><button data-v="m">Medium</button><button data-v="l">Large</button></div>
   <label>Auto-lock when idle</label>
@@ -197,7 +195,7 @@ const USERS = {
 };
 const EMOJIS = ["❤️","😂","👍","😮","😢","🔥"];
 const TRAY = "😀😁😂🤣😊😍😘😎🥰😭😅😉🙈🙏👍👏🔥✨🎉🎂❤️💙💛😴🤔😡🥺🤝💪👀🙌🌹".match(/\p{Extended_Pictographic}\uFE0F?/gu);
-const THEME_BG = { classic: "#14152b", ocean: "#0b1a3f", midnight: "#0d0e18", rose: "#2a1024" };
+const THEME_BG = { black: "#000000", rose: "#2a1024" };
 const $ = id => document.getElementById(id);
 const icon = n => `<svg class="ic"><use href="#i-${n}"/></svg>`;
 
@@ -206,17 +204,18 @@ let replyTo = null, editing = null, started = false, tries = 0, until = 0, pi = 
 const data = {};
 
 /* ---------- preferences (passwords are never stored) ---------- */
-const DEFAULT_THEME = { tegkirat: "midnight", jashanpreet: "rose" };
-let prefs = { theme: "classic", size: "m", auto: "120" };
+const DEFAULT_THEME = { tegkirat: "black", jashanpreet: "rose" };
+let prefs = { theme: "black", size: "m", auto: "120" };
 function loadPrefs(u) {
   prefs = { theme: DEFAULT_THEME[u], size: "m", auto: "120" };
   try { Object.assign(prefs, JSON.parse(localStorage.getItem("prefs_" + u) || "{}")); } catch (e) {}
+  if (!THEME_BG[prefs.theme]) prefs.theme = DEFAULT_THEME[u];
   applyPrefs();
 }
 function applyPrefs() {
   document.documentElement.dataset.theme = prefs.theme;
   document.documentElement.dataset.size = prefs.size;
-  document.querySelector("meta[name=theme-color]").content = THEME_BG[prefs.theme] || "#14152b";
+  document.querySelector("meta[name=theme-color]").content = THEME_BG[prefs.theme] || "#000000";
   document.querySelectorAll(".seg").forEach(s => s.querySelectorAll("button").forEach(b =>
     b.classList.toggle("on", String(prefs[s.dataset.k]) === b.dataset.v)));
   if (me) { try { localStorage.setItem("prefs_" + me, JSON.stringify(prefs)); } catch (e) {} }
