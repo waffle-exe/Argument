@@ -61,10 +61,11 @@ header .ib{border:1px solid var(--line)}
 .msg{display:flex;flex-direction:column;max-width:80%;margin-top:22px}
 .msg.grp{margin-top:9px}
 .msg.me{align-self:flex-end;align-items:flex-end}.msg.them{align-self:flex-start;align-items:flex-start}
-.bubble{padding:9px 13px 7px;border-radius:17px;line-height:1.45;font-size:.95rem;word-break:break-word;cursor:pointer;color:#14152b}
+.bubble{padding:9px 13px 7px;border-radius:17px;line-height:1.45;font-size:.95rem;word-break:break-word;cursor:pointer;color:#14152b;max-width:100%}
 .me.tail .bubble{border-bottom-right-radius:5px}.them.tail .bubble{border-bottom-left-radius:5px}
 .tegkirat .bubble{background:var(--teg)}.jashanpreet .bubble{background:var(--jash)}
 .txt{white-space:pre-wrap}
+.txt a{color:inherit;text-decoration:underline;text-underline-offset:2px;font-weight:500;word-break:break-all}
 .bubble.media{padding:4px}
 .bubble img{display:block;width:260px;max-width:100%;height:auto;max-height:340px;object-fit:cover;border-radius:14px}
 .media .txt{padding:7px 9px 0}.media .meta{padding:3px 9px 3px}.media .quote{margin:4px 4px 6px}
@@ -73,6 +74,15 @@ header .ib{border:1px solid var(--line)}
 .quote{background:#14152b1f;border-left:3px solid #14152b99;border-radius:8px;padding:4px 8px;margin-bottom:5px;font-size:.8rem}
 .quote b{display:block;font-size:.7rem}
 .quote span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* link preview */
+.lp{display:block;margin-top:7px;background:#14152b1f;border-radius:12px;overflow:hidden;color:inherit;text-decoration:none;width:260px;max-width:100%}
+.bubble .lp img{width:100%;height:auto;max-height:140px;object-fit:cover;border-radius:0}
+.lpb{padding:7px 10px 8px}
+.lph{font-size:.68rem;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lpt{font-size:.82rem;font-weight:600;line-height:1.3;margin-top:1px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.lpd{font-size:.74rem;opacity:.75;line-height:1.3;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
 .rx{display:flex;flex-wrap:wrap;gap:4px;margin-top:-5px;padding:0 6px;position:relative;z-index:1}
 .rx:not(:empty){margin-bottom:8px}
 .alt{width:100%;margin-top:8px;padding:11px;border-radius:12px;border:1px solid #2c4aa0;color:#cfe0ff;display:flex;align-items:center;justify-content:center;gap:8px;font-size:.88rem}
@@ -169,6 +179,7 @@ textarea{flex:1;min-width:0;resize:none;max-height:110px;padding:10px 14px;borde
   <label>Auto-lock when idle</label>
   <div class="seg" data-k="auto"><button data-v="0">Off</button><button data-v="30">30s</button><button data-v="120">2 min</button><button data-v="300">5 min</button></div>
   <button class="row" id="faceBtn" type="button" hidden>Enable Face ID unlock</button>
+  <button class="row" id="notifBtn" type="button" hidden>Turn on notifications</button>
   <button class="row" id="lockNow" type="button">Lock now</button>
   <button class="row" id="done" type="button">Done</button>
 </div></div>
@@ -205,12 +216,12 @@ const data = {};
 
 /* ---------- preferences (passwords are never stored) ---------- */
 const DEFAULT_THEME = { tegkirat: "black", jashanpreet: "rose" };
-let prefs = { theme: "black", size: "m", auto: "120" };
+let prefs = { theme: "black", size: "m", auto: "120", notify: "0" };
 function loadPrefs(u) {
-  prefs = { theme: DEFAULT_THEME[u], size: "m", auto: "120" };
+  prefs = { theme: DEFAULT_THEME[u], size: "m", auto: "120", notify: "0" };
   try { Object.assign(prefs, JSON.parse(localStorage.getItem("prefs_" + u) || "{}")); } catch (e) {}
   if (!THEME_BG[prefs.theme]) prefs.theme = DEFAULT_THEME[u];
-  applyPrefs();
+  applyPrefs(); refreshNotif();
 }
 function applyPrefs() {
   document.documentElement.dataset.theme = prefs.theme;
@@ -312,6 +323,44 @@ $("face").onclick = faceUnlock;
 $("faceBtn").onclick = toggleFace;
 if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable)
   PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(ok => { faceOK = ok; refreshFace(); }).catch(() => {});
+
+/* ---------- notifications ---------- */
+const notifOK = () => "Notification" in window;
+let ready = false;
+function refreshNotif() {
+  $("notifBtn").hidden = !notifOK();
+  if (!notifOK()) return;
+  const on = prefs.notify === "1" && Notification.permission === "granted";
+  $("notifBtn").textContent = on ? "Turn off notifications" : "Turn on notifications";
+}
+async function toggleNotif() {
+  if (prefs.notify === "1") { prefs.notify = "0"; applyPrefs(); return refreshNotif(); }
+  let p = Notification.permission;
+  if (p === "default") {
+    busy = true;
+    try { p = await Notification.requestPermission(); }
+    finally { beat = Date.now(); setTimeout(() => busy = false, 800); }
+  }
+  if (p === "granted") { prefs.notify = "1"; applyPrefs(); refreshNotif(); }
+  else {
+    $("notifBtn").textContent = "Blocked. Allow it in browser settings";
+    setTimeout(refreshNotif, 2500);
+  }
+}
+$("notifBtn").onclick = toggleNotif;
+function notify(v) {
+  if (!ready || v.from !== other || prefs.notify !== "1" || !notifOK()) return;
+  if (Notification.permission !== "granted") return;
+  if (!locked && !document.hidden) return;   // only when you're not looking at the chat
+  try {
+    const n = new Notification(USERS[other].name, {
+      body: locked ? "New message" : (v.text || "Photo"),   // content hidden while locked
+      tag: "chat"
+    });
+    n.onclick = () => { window.focus(); n.close(); };
+  } catch (e) {}
+}
+
 $("enter").onclick = tryUnlock;
 $("pw").onkeydown = e => { if (e.key === "Enter") tryUnlock(); };
 $("eye").onclick = () => { $("pw").type = $("pw").type === "password" ? "text" : "password"; };
@@ -367,6 +416,7 @@ function start(u) {
   $("oAv").style.background = other === "tegkirat" ? "var(--teg)" : "var(--jash)";
   $("oName").textContent = USERS[other].name;
   if (started) return; started = true;
+  setTimeout(() => ready = true, 1500);   // don't notify for old messages loading in
 
   db.ref(".info/connected").on("value", s => { if (s.val() && online) setOnline(true); });
   db.ref("presence/" + other).on("value", s => { isOnline = !!s.val(); status(); });
@@ -376,6 +426,7 @@ function start(u) {
   q.on("child_added", s => {
     const v = s.val(); if (!v || !v.from) return;
     data[s.key] = v;
+    notify(v);
     const l = $("list"), near = l.scrollHeight - l.scrollTop - l.clientHeight < 160;
     l.querySelector(".empty")?.remove();
     if (!$("m-" + s.key)) l.append(build(s.key));
@@ -448,6 +499,69 @@ function updatePins() {
 $("pinbar").onclick = () => { const p = pinList(); if (!p.length) return; jump(p[pi]); pi = (pi + 1) % p.length; updatePins(); };
 const togglePin = id => db.ref("messages/" + id).update({ pinned: data[id].pinned ? null : Date.now() });
 
+/* ---------- links: clickable, underlined, with preview card ---------- */
+const URL_RE = /\b(?:https?:\/\/|www\.)[^\s<]+/gi;
+function safeHref(u) {
+  try {
+    const x = new URL(/^https?:\/\//i.test(u) ? u : "https://" + u);
+    return /^https?:$/.test(x.protocol) ? x.href : null;
+  } catch (e) { return null; }
+}
+// returns [DocumentFragment, firstUrl|null]; text is inserted as text nodes only (no innerHTML)
+function linkify(text) {
+  const frag = document.createDocumentFragment();
+  let last = 0, first = null, m;
+  URL_RE.lastIndex = 0;
+  while ((m = URL_RE.exec(text))) {
+    let raw = m[0], tail = "";
+    const t = raw.match(/[.,!?;:)\]}'"]+$/);
+    if (t) { tail = t[0]; raw = raw.slice(0, -tail.length); }
+    const h = safeHref(raw);
+    frag.append(text.slice(last, m.index));
+    if (h) {
+      const a = document.createElement("a");
+      a.href = h; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = raw;
+      a.onclick = e => e.stopPropagation();   // open the link instead of the message menu
+      frag.append(a, tail);
+      if (!first) first = h;
+    } else frag.append(m[0]);
+    last = m.index + m[0].length;
+  }
+  frag.append(text.slice(last));
+  return [frag, first];
+}
+const pvCache = {};
+function preview(h) {
+  const a = document.createElement("a");
+  a.className = "lp"; a.href = h; a.target = "_blank"; a.rel = "noopener noreferrer"; a.dataset.h = h;
+  a.onclick = e => e.stopPropagation();
+  const host = new URL(h).hostname.replace(/^www\./, "");
+  a._fill = d => {
+    a.textContent = "";
+    if (d && d.img) { const i = document.createElement("img"); i.src = d.img; i.alt = ""; i.loading = "lazy"; i.onerror = () => i.remove(); a.append(i); }
+    const b = mk("lpb");
+    b.append(mk("lph", (d && d.site) || host));
+    if (d && d.title) b.append(mk("lpt", d.title));
+    if (d && d.desc) b.append(mk("lpd", d.desc));
+    a.append(b);
+  };
+  a._fill(pvCache[h] || null);
+  if (!(h in pvCache)) {
+    pvCache[h] = null;
+    // metadata comes from the free microlink.io API (the page itself can't read other sites)
+    fetch("https://api.microlink.io/?url=" + encodeURIComponent(h))
+      .then(r => r.json())
+      .then(j => {
+        const d = j && j.data;
+        if (!j || j.status !== "success" || !d) return;
+        pvCache[h] = { title: d.title, desc: d.description, site: d.publisher, img: (d.image && d.image.url) || (d.logo && d.logo.url) };
+        document.querySelectorAll(".lp").forEach(el => { if (el.dataset.h === h && el._fill) el._fill(pvCache[h]); });
+      })
+      .catch(() => {});
+  }
+  return a;
+}
+
 /* ---------- message element ---------- */
 const mk = (c, t) => { const d = document.createElement("div"); if (c) d.className = c; if (t != null) d.textContent = t; return d; };
 const closeMenus = () => document.querySelectorAll(".msg.open").forEach(x => x.classList.remove("open"));
@@ -463,6 +577,7 @@ function build(id) {
   ar.append(act(m.pinned ? "Unpin" : "Pin", () => togglePin(id)));
   if (m.text) ar.append(act("Copy", () => navigator.clipboard?.writeText(m.text)));
   if (mine && m.text) ar.append(act("Edit", () => setEdit(id)));
+  if (me === "jashanpreet") ar.append(act("Delete", () => { if (ask("Delete this message for both of you?")) db.ref("messages/" + id).remove(); }, "bad"));
   tools.append(er, ar);
 
   const bubble = mk("bubble");
@@ -473,7 +588,11 @@ function build(id) {
     bubble.append(qt);
   }
   if (m.img) { const i = document.createElement("img"); i.src = m.img; i.alt = "Photo"; bubble.classList.add("media"); bubble.append(i); }
-  if (m.text) bubble.append(mk("txt", m.text));
+  if (m.text) {
+    const [frag, first] = linkify(m.text);
+    const t = mk("txt"); t.append(frag); bubble.append(t);
+    if (first) bubble.append(preview(first));
+  }
   const meta = mk("meta");
   if (m.pinned) meta.insertAdjacentHTML("beforeend", icon("pin"));
   const time = m.ts ? new Date(m.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "…";
