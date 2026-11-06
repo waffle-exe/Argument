@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tegkirat & Jashanpreet</title>
+<style>
+:root{
+  --bg:#14152b; --panel:#1d1f3d; --line:#2e3160; --text:#eceefc; --muted:#8e93c4;
+  --teg:#2fd4b8; --jash:#ffb547; --danger:#ff7a8a;
+  --font:"Trebuchet MS","Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--font);overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+:focus-visible{outline:2px solid var(--teg);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* ---------- login ---------- */
+#login{height:100%;display:grid;place-items:center;padding:20px}
+.card{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:28px 24px}
+.card h1{font-size:1.5rem;margin-bottom:6px}
+.card p{color:var(--muted);font-size:.92rem;margin-bottom:20px;line-height:1.4}
+.who{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.who button{padding:14px 8px;border-radius:14px;border:2px solid var(--line);font-weight:700;transition:.15s}
+.who button[data-u=tegkirat].on{border-color:var(--teg);background:#2fd4b822}
+.who button[data-u=jashanpreet].on{border-color:var(--jash);background:#ffb54722}
+.card input{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;font-size:1.1rem;text-align:center;letter-spacing:.2em}
+.card .go{width:100%;margin-top:14px;padding:14px;border-radius:12px;background:var(--text);color:var(--bg);font-weight:700}
+#err{color:var(--danger);font-size:.88rem;min-height:1.2em;margin-top:10px;text-align:center}
+.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* ---------- chat ---------- */
+#app{height:100%;display:flex;flex-direction:column;max-width:760px;margin:0 auto;border-inline:1px solid var(--line)}
+header{display:flex;align-items:center;gap:12px;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+.avatar{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#14152b}
+header .info{flex:1;min-width:0}
+header .nm{font-weight:700}
+header .st{font-size:.78rem;color:var(--muted)}
+header .st i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#576;margin-right:5px}
+header .st.on i{background:#4ee08a}
+#logout{font-size:.82rem;color:var(--muted);padding:8px 10px;border-radius:8px;border:1px solid var(--line)}
+#list{flex:1;overflow-y:auto;padding:16px 14px 8px;display:flex;flex-direction:column;gap:6px;scroll-behavior:smooth}
+.empty{margin:auto;color:var(--muted);text-align:center;font-size:.92rem}
+
+.msg{display:flex;flex-direction:column;max-width:82%;position:relative}
+.msg.me{align-self:flex-end;align-items:flex-end}
+.msg.them{align-self:flex-start;align-items:flex-start}
+.bubble{padding:9px 12px;border-radius:16px;line-height:1.38;word-break:break-word;white-space:pre-wrap;cursor:pointer;color:#14152b}
+.me .bubble{border-bottom-right-radius:5px}
+.them .bubble{border-bottom-left-radius:5px}
+.msg.tegkirat .bubble{background:var(--teg)}
+.msg.jashanpreet .bubble{background:var(--jash)}
+.meta{font-size:.68rem;opacity:.6;text-align:right;margin-top:3px}
+.quote{background:#14152b22;border-left:3px solid #14152bAA;border-radius:8px;padding:5px 8px;margin-bottom:6px;font-size:.82rem;cursor:pointer;white-space:normal}
+.quote b{display:block;font-size:.74rem}
+.quote span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;opacity:.85}
+.rx{display:flex;flex-wrap:wrap;gap:4px;margin-top:-6px;position:relative;z-index:1;padding:0 6px}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:.82rem}
+.chip.mine{border-color:var(--text);background:#2e3160}
+.tools{display:none;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px 6px;margin-bottom:4px;box-shadow:0 6px 18px #0006;align-self:inherit}
+.msg.open .tools{display:flex}
+@media (hover:hover){.msg:hover .tools{display:flex}}
+.tools button{font-size:1.15rem;padding:3px 5px;border-radius:50%;transition:transform .1s}
+.tools button:hover{transform:scale(1.25)}
+.tools .rep{font-size:.8rem;padding:3px 9px;border-radius:999px;background:var(--line)}
+.flash .bubble{animation:flash 1.2s}
+@keyframes flash{30%{box-shadow:0 0 0 4px #fff8}}
+
+/* ---------- composer ---------- */
+#replybar{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--panel);border-top:1px solid var(--line);font-size:.84rem}
+#replybar div{flex:1;min-width:0;border-left:3px solid var(--muted);padding-left:8px}
+#replybar b{display:block;font-size:.76rem}
+#replybar span{display:block;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#replybar button{font-size:1.2rem;color:var(--muted);padding:4px 8px}
+form{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--panel);border-top:1px solid var(--line)}
+form textarea{flex:1;resize:none;max-height:120px;padding:11px 14px;border-radius:20px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit}
+form .send{width:44px;height:44px;border-radius:50%;background:var(--text);color:var(--bg);font-size:1.2rem;align-self:flex-end}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<section id="login">
+  <div class="card" id="card">
+    <h1>Our private chat</h1>
+    <p>Pick who you are, then enter your birthday as the one-time code (day and month, e.g. <b>1111</b>).</p>
+    <div class="who">
+      <button type="button" data-u="tegkirat">Tegkirat</button>
+      <button type="button" data-u="jashanpreet">Jashanpreet</button>
+    </div>
+    <input id="code" type="password" inputmode="numeric" autocomplete="off" placeholder="DDMM" maxlength="12" aria-label="Birthday code">
+    <button class="go" id="enter" type="button">Enter chat</button>
+    <div id="err" role="alert"></div>
+  </div>
+</section>
+
+<section id="app" hidden>
+  <header>
+    <div class="avatar" id="oAv"></div>
+    <div class="info"><div class="nm" id="oName"></div><div class="st" id="oSt"><i></i><span>offline</span></div></div>
+  </header>
+  <div id="list" aria-live="polite"></div>
+  <div id="replybar" hidden>
+    <div><b id="rbName"></b><span id="rbText"></span></div>
+    <button type="button" id="rbClose" aria-label="Cancel reply">✕</button>
+  </div>
+  <form id="form">
+    <textarea id="input" rows="1" placeholder="Write a message" autocomplete="off"></textarea>
+    <button class="send" type="submit" aria-label="Send">➤</button>
+  </form>
+</section>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCut-Qi7scoHnjHyE8UBuN53PHWnMMKqSE",
+  authDomain: "sitee-f6a0c.firebaseapp.com",
+  databaseURL: "https://sitee-f6a0c-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "sitee-f6a0c",
+  storageBucket: "sitee-f6a0c.firebasestorage.app",
+  messagingSenderId: "284183052545",
+  appId: "1:284183052545:web:ef85ecc7be844cede8db00",
+  measurementId: "G-HZHS31QH07"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const USERS = {
+  tegkirat:    { name: "Tegkirat",    codes: ["1111", "11nov", "11november"] },
+  jashanpreet: { name: "Jashanpreet", codes: ["1108", "11aug", "11august"] }
+};
+const EMOJIS = ["❤️", "😂", "👍", "😮", "😢", "🔥"];
+const $ = id => document.getElementById(id);
+let me = null, other = null, picked = null, replyTo = null;
+const data = {};              // id -> message data (for reactions)
+
+/* ---------- login ---------- */
+document.querySelectorAll(".who button").forEach(b => b.onclick = () => {
+  picked = b.dataset.u;
+  document.querySelectorAll(".who button").forEach(x => x.classList.toggle("on", x === b));
+  $("err").textContent = ""; $("code").focus();
+});
+const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+function tryLogin() {
+  if (!picked) return fail("Choose your name first.");
+  if (!USERS[picked].codes.includes(norm($("code").value))) return fail("That code doesn't match. Use your birthday as DDMM.");
+  remember(picked);
+  start(picked);
+}
+function fail(msg) {
+  $("err").textContent = msg;
+  $("card").classList.remove("shake"); void $("card").offsetWidth; $("card").classList.add("shake");
+}
+$("enter").onclick = tryLogin;
+$("code").onkeydown = e => { if (e.key === "Enter") tryLogin(); };
+
+
+/* ---------- chat ---------- */
+function start(user) {
+  me = user; other = user === "tegkirat" ? "jashanpreet" : "tegkirat";
+  $("login").hidden = true; $("app").hidden = false;
+  const av = $("oAv");
+  av.textContent = USERS[other].name[0];
+  av.style.background = other === "tegkirat" ? "var(--teg)" : "var(--jash)";
+  $("oName").textContent = USERS[other].name;
+
+  // presence
+  const mine = db.ref("presence/" + me);
+  db.ref(".info/connected").on("value", s => {
+    if (s.val()) { mine.onDisconnect().remove(); mine.set(true); }
+  });
+  db.ref("presence/" + other).on("value", s => {
+    $("oSt").classList.toggle("on", !!s.val());
+    $("oSt").lastElementChild.textContent = s.val() ? "online" : "offline";
+  });
+
+  // realtime sync
+  const q = db.ref("messages").orderByChild("ts").limitToLast(300);
+  q.on("child_added", s => { data[s.key] = s.val(); addMsg(s.key); });
+  q.on("child_changed", s => { data[s.key] = s.val(); updateRx(s.key); });
+  setTimeout(() => { if (!$("list").children.length) $("list").innerHTML = '<div class="empty">No messages yet.<br>Say hi to ' + USERS[other].name + '.</div>'; }, 1200);
+}
+
+function addMsg(id) {
+  const m = data[id], list = $("list");
+  list.querySelector(".empty")?.remove();
+  if ($("m-" + id)) return;
+  const near = list.scrollHeight - list.scrollTop - list.clientHeight < 140;
+  const el = document.createElement("div");
+  el.id = "m-" + id;
+  el.className = `msg ${m.from === me ? "me" : "them"} ${m.from}`;
+
+  const tools = document.createElement("div"); tools.className = "tools";
+  EMOJIS.forEach(e => {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = e;
+    b.onclick = ev => { ev.stopPropagation(); react(id, e); el.classList.remove("open"); };
+    tools.append(b);
+  });
+  const rep = document.createElement("button"); rep.type = "button"; rep.className = "rep"; rep.textContent = "Reply";
+  rep.onclick = ev => { ev.stopPropagation(); setReply(id); el.classList.remove("open"); };
+  tools.append(rep);
+
+  const bubble = document.createElement("div"); bubble.className = "bubble";
+  if (m.reply) {
+    const qt = document.createElement("div"); qt.className = "quote";
+    const b = document.createElement("b"); b.textContent = USERS[m.reply.from]?.name || "";
+    const sp = document.createElement("span"); sp.textContent = m.reply.text;
+    qt.append(b, sp);
+    qt.onclick = ev => { ev.stopPropagation(); jump(m.reply.id); };
+    bubble.append(qt);
+  }
+  const t = document.createElement("div"); t.textContent = m.text;
+  const meta = document.createElement("div"); meta.className = "meta";
+  meta.textContent = m.ts ? new Date(m.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "…";
+  bubble.append(t, meta);
+  bubble.onclick = () => {
+    document.querySelectorAll(".msg.open").forEach(x => x !== el && x.classList.remove("open"));
+    el.classList.toggle("open");
+  };
+
+  const rx = document.createElement("div"); rx.className = "rx";
+  el.append(tools, bubble, rx);
+  list.append(el);
+  updateRx(id);
+  if (near || m.from === me) list.scrollTop = list.scrollHeight;
+}
+
+function updateRx(id) {
+  const rx = document.querySelector("#m-" + id + " .rx"); if (!rx) return;
+  rx.innerHTML = "";
+  const r = data[id].reactions || {};
+  Object.keys(r).forEach(e => {
+    const who = Object.keys(r[e] || {}); if (!who.length) return;
+    const c = document.createElement("button"); c.type = "button";
+    c.className = "chip" + (who.includes(me) ? " mine" : "");
+    c.textContent = e + (who.length > 1 ? " " + who.length : "");
+    c.onclick = () => react(id, e);
+    rx.append(c);
+  });
+}
+
+function react(id, emoji) {
+  const ref = db.ref(`messages/${id}/reactions/${emoji}/${me}`);
+  const has = data[id]?.reactions?.[emoji]?.[me];
+  has ? ref.remove() : ref.set(true);
+}
+
+function setReply(id) {
+  const m = data[id];
+  replyTo = { id, from: m.from, text: m.text.slice(0, 120) };
+  $("rbName").textContent = "Replying to " + USERS[m.from].name;
+  $("rbText").textContent = m.text;
+  $("replybar").hidden = false; $("input").focus();
+}
+function clearReply() { replyTo = null; $("replybar").hidden = true; }
+$("rbClose").onclick = clearReply;
+
+function jump(id) {
+  const el = $("m-" + id); if (!el) return;
+  el.scrollIntoView({ block: "center" });
+  el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+}
+
+/* ---------- send ---------- */
+function send() {
+  const text = $("input").value.trim(); if (!text) return;
+  const msg = { from: me, text, ts: firebase.database.ServerValue.TIMESTAMP };
+  if (replyTo) msg.reply = replyTo;
+  db.ref("messages").push(msg);
+  $("input").value = ""; $("input").style.height = "auto"; clearReply();
+}
+$("form").onsubmit = e => { e.preventDefault(); send(); };
+$("input").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } };
+$("input").oninput = e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"; };
+
+/* one-time login: remembered on this device, never asked again */
+function remember(u) {
+  try { localStorage.setItem("chatUser", u); } catch (e) {}
+  document.cookie = "chatUser=" + u + "; max-age=315360000; path=/; SameSite=Lax"; // ~10 years
+  try { navigator.storage?.persist?.(); } catch (e) {}
+}
+function recall() {
+  try { const v = localStorage.getItem("chatUser"); if (USERS[v]) return v; } catch (e) {}
+  const m = document.cookie.match(/(?:^|; )chatUser=(\w+)/);
+  return m && USERS[m[1]] ? m[1] : null;
+}
+const saved = recall();
+if (saved) { remember(saved); start(saved); }
+</script>
+</body>
+</html>
