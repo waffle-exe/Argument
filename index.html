@@ -6,9 +6,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Chat">
+<meta name="apple-mobile-web-app-title" content="Argumentss">
 <meta name="theme-color" content="#000000">
 <title>Arguments</title>
+<meta name="application-name" content="Arguments">
 <style>
 :root{--bg:#000000;--panel:#101014;--line:#26262d;--text:#f2f2f5;--muted:#8b8b96;--teg:#2fd4b8;--jash:#ffb547;--bad:#ff7a8a;--h:100dvh;
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Segoe UI",Roboto,system-ui,sans-serif}
@@ -39,7 +40,8 @@ body.locked #app{filter:blur(24px);pointer-events:none}
 .shake{animation:shake .35s}@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 
 /* chat shell */
-#app{height:var(--h);display:flex;flex-direction:column;max-width:760px;margin:0 auto;padding-inline:env(safe-area-inset-left) env(safe-area-inset-right);border-inline:1px solid var(--line);transition:filter .15s}
+#app{position:fixed;top:0;left:0;right:0;bottom:var(--kb,0px);display:flex;flex-direction:column;max-width:760px;margin:0 auto;padding-inline:env(safe-area-inset-left) env(safe-area-inset-right);border-inline:1px solid var(--line)}
+body.kb form{padding-bottom:8px}
 header{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;background:var(--panel);border-bottom:1px solid var(--line)}
 .avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.95rem;color:#14152b;flex:none}
 .info{flex:1;min-width:0}.nm{font-weight:600;font-size:.98rem}
@@ -138,7 +140,7 @@ textarea{flex:1;min-width:0;resize:none;max-height:110px;padding:10px 14px;borde
 
 <div id="lock"><div class="card" id="card">
   <svg class="ic big"><use href="#i-lock"/></svg>
-  <h1>Private chat</h1>
+  <h1>Wait!!!</h1>
   <p id="lp">Enter your password to continue.</p>
   <div class="pwrow">
     <input id="pw" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Password" aria-label="Password">
@@ -239,7 +241,13 @@ document.querySelectorAll(".seg").forEach(s => s.onclick = e => {
 
 /* ---------- iPhone keyboard / viewport ---------- */
 const vv = window.visualViewport;
-function fit() { document.documentElement.style.setProperty("--h", (vv ? vv.height : innerHeight) + "px"); scrollTo(0, 0); }
+function fit() {
+  // only shrink the app when the keyboard is open; otherwise fill the whole screen
+  const kb = vv ? Math.max(0, innerHeight - vv.height - vv.offsetTop) : 0, open = kb > 80;
+  document.documentElement.style.setProperty("--kb", (open ? kb : 0) + "px");
+  document.body.classList.toggle("kb", open);
+  scrollTo(0, 0);
+}
 if (vv) { vv.addEventListener("resize", fit); vv.addEventListener("scroll", fit); } addEventListener("resize", fit); fit();
 
 /* ---------- lock / unlock ---------- */
@@ -307,7 +315,7 @@ async function toggleFace() {
   try {
     const c = await navigator.credentials.create({ publicKey: {
       challenge: crypto.getRandomValues(new Uint8Array(32)),
-      rp: { name: "Private chat" },
+      rp: { name: "Arguments" },
       user: { id: crypto.getRandomValues(new Uint8Array(16)), name: me, displayName: USERS[me].name },
       pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
       authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" },
