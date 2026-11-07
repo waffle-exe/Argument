@@ -45,7 +45,7 @@ body.locked #app{filter:blur(24px);pointer-events:none}
 .shake{animation:shake .35s}@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 
 /* chat shell: sized to the VISIBLE viewport so the keyboard never covers the input */
-#app{position:fixed;top:0;left:0;right:0;height:var(--vh,100dvh);transform:translateY(var(--vt,0px));display:flex;flex-direction:column;max-width:760px;margin:0 auto;padding-inline:env(safe-area-inset-left) env(safe-area-inset-right);border-inline:1px solid var(--line)}
+#app{position:fixed;top:0;left:0;right:0;bottom:auto;height:var(--vh,100%);transform:translateY(var(--vt,0px));display:flex;flex-direction:column;max-width:760px;margin:0 auto;padding-inline:env(safe-area-inset-left) env(safe-area-inset-right);border-inline:1px solid var(--line)}
 body.kb form{padding-bottom:8px}
 header{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;background:var(--panel);border-bottom:1px solid var(--line);flex:none}
 .avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.95rem;color:#14152b;flex:none}
@@ -249,12 +249,21 @@ document.querySelectorAll(".seg").forEach(s => s.onclick = e => {
    keyboard) and shifted by offsetTop, so the input bar always stays on screen. */
 const vv = window.visualViewport;
 function fit() {
-  const h = vv ? vv.height : innerHeight;
-  const top = vv ? vv.offsetTop : 0;
-  const open = innerHeight - h > 80;               // keyboard visible
   const r = document.documentElement.style;
-  r.setProperty("--vh", h + "px");
-  r.setProperty("--vt", top + "px");
+  const ae = document.activeElement;
+  const typingNow = ae && (ae.id === "input" || ae.id === "pw");
+  const h = vv ? vv.height : innerHeight;
+  // keyboard is open only if a text field is focused AND the visual viewport really shrank
+  const open = !!(typingNow && vv && window.screen && (screen.height - h > 220 || innerHeight - h > 120));
+  if (open) {
+    r.setProperty("--vh", h + "px");
+    r.setProperty("--vt", vv.offsetTop + "px");
+  } else {
+    // keyboard closed: fill the entire screen (no gap at the bottom, nothing shifted up)
+    r.removeProperty("--vh");
+    r.removeProperty("--vt");
+    if (window.scrollY || document.documentElement.scrollTop) scrollTo(0, 0);
+  }
   document.body.classList.toggle("kb", open);
   if (open) { const l = $("list"); if (l) l.scrollTop = l.scrollHeight; }
 }
